@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Display Images</title>
+    <style>
+        #image-container {
+            max-width: 100%;
+            max-height: 80vh;
+            position: relative;
+        }
+
+        #image-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #image-shape {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        var drawing = false;
+        var startX, startY, endX, endY;
+
+        function startDrawing(event) {
+            var rect = event.target.getBoundingClientRect();
+            startX = event.clientX - rect.left;
+            startY = event.clientY - rect.top;
+            drawing = true;
+        }
+
+        function drawBox(event) {
+            if (!drawing) return;
+
+            var rect = event.target.getBoundingClientRect();
+            endX = event.clientX - rect.left;
+            endY = event.clientY - rect.top;
+
+            // Ensure the drawing remains inside the image bounds
+            endX = Math.max(0, Math.min(endX, event.target.width));
+            endY = Math.max(0, Math.min(endY, event.target.height));
+
+            var canvas = document.getElementById('drawing-canvas');
+            var ctx = canvas.getContext('2d');
+
+            // Draw the box on a new layer
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+        }
+
+        function stopDrawing() {
+            if (!drawing) return;
+            drawing = false;
+
+            // Update resolution text
+            var imageShape = document.getElementById('image-shape');
+            imageShape.textContent = 'Drawn Box: ' + Math.abs(endX - startX) + ' x ' + Math.abs(endY - startY);
+        }
+
+        function displayImage(url) {
+            var imageContainer = document.getElementById('image-container');
+            
+            // Clear previous canvases
+            imageContainer.innerHTML = '';
+
+            // Create canvas for displaying the image
+            var imageCanvas = document.createElement('canvas');
+            imageCanvas.id = 'image-canvas';
+            imageContainer.appendChild(imageCanvas);
+
+            // Create canvas for drawing the box
+            var drawingCanvas = document.createElement('canvas');
+            drawingCanvas.id = 'drawing-canvas';
+            imageContainer.appendChild(drawingCanvas);
+
+            var img = new Image();
+            img.src = url;
+
+            img.onload = function() {
+                var originalWidth = img.width;
+                var originalHeight = img.height;
+
+                // Set a fixed size for the displayed image (you can adjust these values)
+                var displayWidth = 300;
+                var displayHeight = (originalHeight / originalWidth) * displayWidth;
+
+                // Set canvas dimensions
+                imageCanvas.width = displayWidth;
+                imageCanvas.height = displayHeight;
+                drawingCanvas.width = displayWidth;
+                drawingCanvas.height = displayHeight;
+
+                // Draw scaled image on canvas
+                var ctx = imageCanvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
+            };
+        }
+    </script>
+</head>
+<body>
+    <h2>All Images</h2>
+    <ul>
+        {% for image in images %}
+            <li>
+                <a href="#" onclick="displayImage('{{ image.url }}'); console.log('{{ image.file_name }}');">{{ image.file_name }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+    <div id="image-container" onmousedown="startDrawing(event)" onmousemove="drawBox(event)" onmouseup="stopDrawing()">
+        <p id="image-shape"></p>
+    </div>
+</body>
+</html>
